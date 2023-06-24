@@ -2,8 +2,9 @@ package com.shopping.product;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shopping.product.dto.ProductRequest;
+import com.shopping.product.repository.ProductRepository;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.engine.TestExecutionResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -14,25 +15,31 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
+
+import java.math.BigDecimal;
+
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
-@Testcontainers
 @AutoConfigureMockMvc
-class ProductApplicationTests {
+class ProductServiceApplicationTests {
 
     @Container
     static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:4.4.2");
-
     @Autowired
     private MockMvc mockMvc;
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private ProductRepository productRepository;
+
+    static {
+        mongoDBContainer.start();
+    }
 
     @DynamicPropertySource
-    static void setProperties(DynamicPropertyRegistry dynamicPropertyRegistry) {
-        dynamicPropertyRegistry.add("spring.data.mongodb.uri", mongoDBContainer::getReplicaSetUrl);
+    static void setProperties(DynamicPropertyRegistry dymDynamicPropertyRegistry) {
+        dymDynamicPropertyRegistry.add("spring.data.mongodb.uri", mongoDBContainer::getReplicaSetUrl);
     }
 
     @Test
@@ -41,8 +48,11 @@ class ProductApplicationTests {
         String productRequestString = objectMapper.writeValueAsString(productRequest);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/product")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(productRequestString)).andExpect();
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(productRequestString))
+                .andExpect(status().isCreated());
+
+        Assertions.assertEquals(1, productRepository.findAll().size());
     }
 
     private ProductRequest getProductRequest() {
@@ -51,6 +61,14 @@ class ProductApplicationTests {
                 .description("iPhone 13")
                 .price(BigDecimal.valueOf(1200))
                 .build();
+    }
+
+    // Create integration test for the other endpoint
+    @Test
+    void shouldGetAllProducts() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/product"))
+                .andExpect(status().isOk());
+
     }
 
 }
