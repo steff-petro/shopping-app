@@ -1,2 +1,2 @@
 # shopping-app
-A microservice shopping app project
+A microservice shopping app mini project
